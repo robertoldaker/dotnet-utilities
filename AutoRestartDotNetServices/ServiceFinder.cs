@@ -13,6 +13,9 @@ public class ServiceFinder
 
     public void Restart(List<DotNetInfo.Version> changes)
     {
+        //
+        // Note writing text output to STDERROR so that when running in cronjob we can automatically get an email sent (using MAILTO mechanism)
+        //
         List<string> runtimeFiles = new List<String>();
         findRuntimeFiles(_folder, runtimeFiles, changes);
         foreach (var f in runtimeFiles)
@@ -20,23 +23,39 @@ public class ServiceFinder
             var serviceName = findServiceName(f);
             if (serviceName != null)
             {
-                Console.Write($"Restarting service [${serviceName}] ...");
-                var exe = new Execute();
-                var code = exe.Run("sudo", $"systemctl restart {serviceName}");
-                if (code == 0)
+                // Only restart running services
+                var isRunning = isServiceRunning(serviceName);
+                if (isRunning)
                 {
-                    Console.WriteLine($"Restarted OK");
+                    Console.Error.Write($"Restarting service [{serviceName}] ...");
+                    var exe = new Execute();
+                    var code = exe.Run("sudo", $"systemctl restart {serviceName}");
+                    if (code == 0)
+                    {
+                        Console.Error.WriteLine($"restarted OK");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Failed to restart [{code}] [{exe.StandardError}]");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to restart [{code}] [{exe.StandardError}]");
+                    Console.Error.WriteLine($"Not restarting service [{serviceName}] as not running");
                 }
             }
             else
             {
-                Console.WriteLine($"Could not find service for file [{f}]");
+                Console.Error.WriteLine($"Could not find service for file [{f}]");
             }
         }
+    }
+
+    private bool isServiceRunning(string serviceName)
+    {
+        var exe = new Execute();
+        exe.Run("systemctl", $"is-active {serviceName}");
+        return exe.StandardOutput.Trim() == "active" ? true : false;
     }
 
     private string? findServiceName(string path)
@@ -48,8 +67,8 @@ public class ServiceFinder
             var lines = File.ReadLines(sf);
             foreach (var line in lines)
             {
-                // ExecStart=/usr/bin/dotnet /home/rob/ImageViewer/ImageViewer.server.dll --urls="http://*:5020" 
                 //
+                // ExecStart=/usr/bin/dotnet /home/rob/ImageViewer/ImageViewer.server.dll --urls="http://*:5020" 
                 if (line.StartsWith("ExecStart=") && line.Contains("dotnet") && line.Contains(df))
                 {
                     return Path.GetFileName(sf);
@@ -132,11 +151,11 @@ public class ServiceFinder
             public Framework? framework { get; set; }
             public class Framework
             {
-                public string name { get; set; }
-                public string version { get; set; }
+                public string? name { get; set; }
+                public string? version { get; set; }
             }
         }
-        public Options runtimeOptions { get; set; }
+        public Options? runtimeOptions { get; set; }
     }
 
 

@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build AutoRestartDotNetServices",
             "program": "${workspaceFolder}/AutoRestartDotNetServices/bin/Debug/net8.0/AutoRestartDotNetServices.dll",
-            "args": ["/home/rob"],
+            "args": ["-v","/home/rob"],
             "cwd": "${workspaceFolder}/AutoRestartDotNetServices",
             "stopAtEntry": false,
             "env": {},

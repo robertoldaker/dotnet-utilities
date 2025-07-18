@@ -53,3 +53,7 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 AutoRestartDotNetServices/DotNetInfo.json
+AutoRestartDotNetServices/AutoRestartDotNetServices.1.0.0.deb
+.gitignore
+AutoRestartDotNetServices/PublishToProduction.sh
+AutoRestartDotNetServices/PublishToStaging.sh

@@ -1,13 +1,14 @@
 ﻿using CommandLine;
 using Rso.DotNetUtilities;
 using System;
+using System.Reflection;
 
 class Program
 {
     public class Options
     {
-        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
-        public bool Verbose { get; set; }
+        [Option('v', "version", Required = false, HelpText = "Returns version and exits")]
+        public bool Version { get; set; }
 
         [Value(0,Required=false,HelpText="Folder to search for services", Default = "")]
         public string Folder { get; set; }
@@ -22,11 +23,17 @@ class Program
 
     static int RunOptionsAndReturnExitCode(Options options)
     {
+        if (options.Version)
+        {
+            var version = getVersion();
+            Console.WriteLine($"Version={version}");
+            return 0;
+        }
         var dni = new DotNetInfo();
         dni.ReadCurrent();
         foreach (var rt in dni.Runtimes)
         {
-            Console.WriteLine($"NETCore = {rt}");
+            Console.WriteLine($"{rt}");
         }
         //
         var prevDni = DotNetInfo.GetPrevious();
@@ -42,8 +49,7 @@ class Program
             var changes = dni.Changes(prevDni);
             if (changes.Count > 0)
             {
-                Console.WriteLine(".NET changes detected. Restarting services...");
-                //?? DotNetInfo.Save(dni);
+                DotNetInfo.Save(dni);
                 restartServices(options, changes);
                 return 0;
             }
@@ -55,8 +61,28 @@ class Program
         }
     }
 
+    private static string getVersion()
+    {
+        Assembly assembly = Assembly.GetExecutingAssembly();
+
+        // Get the AssemblyInformationalVersionAttribute
+        // This usually holds the value of the <Version> or <VersionPrefix> with <VersionSuffix> from .csproj
+        string informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        return informationalVersion;
+
+    }
+
     private static void restartServices(Options options, List<DotNetInfo.Version> changes)
     {
+        //
+        // Note writing to STDERROR so that when running as a cron job we can get an email using the MAILTO mechanism
+        //
+        Console.Error.WriteLine("These .NET changes detected:-");
+        foreach (var chg in changes)
+        {
+            Console.Error.WriteLine($"     {chg}");
+        }
         var folder = options.Folder;
         if (string.IsNullOrEmpty(folder))
         {
@@ -64,7 +90,7 @@ class Program
         }
         var serviceFinder = new ServiceFinder(folder);
         serviceFinder.Restart(changes);
-        
+
     }
 
     static void HandleParseError(IEnumerable<Error> errors)

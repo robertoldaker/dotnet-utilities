@@ -55,6 +55,11 @@ public class DotNetInfo
             return FrameworkName == v.FrameworkName && Major == v.Major && (v.Patch > Patch || v.Minor > Minor);
         }
 
+        public override string ToString()
+        {
+            return $"{FrameworkName} {Major}.{Minor}.{Patch}";
+        }
+
     }
 
     public List<Version> Runtimes { get; set; }
