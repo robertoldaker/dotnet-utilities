@@ -18,6 +18,6 @@ This is an example ...
 # Monitor dotnet installs and restart services if an update detected
 # unattended upgrades runs 6.30ish so scheduled for 8 to ensure its finished
 # only redirect stdout so that stderr gets emailed
-0 8 * * *  cd websites && AutoRestartDotNetServices > /dev/nul
+0 8 * * *  cd websites && AutoRestartDotNetServices > /dev/null
 
 
